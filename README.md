@@ -88,6 +88,7 @@ Content-Type: application/json
   "paciente_id": 1,
   "medico_id": 1,
   "doenca": "Dor de cabeça",
+  "CID": "C70",
   "medicamentos": [
     {
       "nome": "DORALGINA", 
@@ -120,7 +121,8 @@ Content-Type: application/json
 {
   "paciente_id": 1,
   "medico_id": 1,
-  "doenca": "Dor de cabeça",
+  "doenca": "CÓLERA",
+  "CID": "A00",
   "medicamentos": [
     {
       "nome": "PARACETAMOL", 
