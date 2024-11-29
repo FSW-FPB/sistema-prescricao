@@ -3,8 +3,10 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 import csv
 from datetime import datetime
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
 client = MongoClient('mongodb://localhost:27017/')
 db = client['clinica']
 
@@ -170,12 +172,19 @@ def consultar_medicamento(nome):
 @app.route('/medicamentos/busca', methods=['GET'])
 def buscar_medicamento_por_nome():
     nome = request.args.get('search')  # Obtém o parâmetro 'search' da query string
+    page = int(request.args.get('page', 1))  # Página atual, padrão é 1
+    limit = int(request.args.get('limit', 20))  # Limite de resultados por página, padrão é 20
 
     if not nome:
         return jsonify({'error': 'Parâmetro "search" é obrigatório'}), 400
 
     try:
         medicamentos_encontrados = []
+        # Calcula o índice inicial e final para a busca
+        start_idx = (page - 1) * limit
+        end_idx = start_idx + limit
+
+        # Lista completa de medicamentos que correspondem à busca
         with open('medicamentos.csv', mode='r', encoding='utf-8') as file:
             reader = csv.reader(file, delimiter=';')
             for row in reader:
@@ -189,11 +198,20 @@ def buscar_medicamento_por_nome():
                         "tipo": tipo_medicamento if tipo_medicamento else "Tipo não disponível"
                     })
 
-        # Se não encontrar nenhum medicamento, retorna erro
-        if not medicamentos_encontrados:
+        medicamentos_paginated = medicamentos_encontrados[start_idx:end_idx]
+        if not medicamentos_paginated:
             return jsonify({'error': 'Nenhum medicamento encontrado com esse nome'}), 404
 
-        return jsonify(medicamentos_encontrados), 200
+        # Calcula o total de medicamentos encontrados para passar nas informações de paginação
+        total_medicamentos = len(medicamentos_encontrados)
+        total_pages = (total_medicamentos + limit - 1) // limit  # Arredonda para cima para calcular as páginas
+
+        return jsonify({
+            'total_medicamentos': total_medicamentos,
+            'total_pages': total_pages,
+            'current_page': page,
+            'medicamentos': medicamentos_paginated
+        }), 200
 
     except FileNotFoundError:
         return jsonify({"error": "Arquivo medicamentos.csv não encontrado"}), 500
